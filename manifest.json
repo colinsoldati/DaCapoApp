@@ -1,0 +1,24 @@
+{
+  "name": "DaCapo. Journal de Répétition",
+  "short_name": "DaCapo.",
+  "description": "Journal de bord pour suivre vos répétitions musicales.",
+  "start_url": ".", // Démarre à partir du fichier HTML principal
+  "display": "standalone", // Ouvre comme une app native, sans barre d'URL
+  "background_color": "#ffffff", // Couleur de fond avant le chargement du CSS
+  "theme_color": "#000000", // Couleur de la barre d'état/thème
+  "orientation": "portrait-primary", // Orientation préférée
+  "icons": [
+    {
+      "src": "icon-192x192.png", // Chemin vers votre icône 192x192 px
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable" // Important pour l'adaptation de l'icône
+    },
+    {
+      "src": "icon-512x512.png", // Chemin vers votre icône 512x512 px
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
