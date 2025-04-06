@@ -9,13 +9,13 @@
   "orientation": "portrait-primary", // Orientation préférée
   "icons": [
     {
-      "src": "icon-192x192.png", // Chemin vers votre icône 192x192 px
+      "src": "icon-192.png", // Chemin vers votre icône 192x192 px
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable" // Important pour l'adaptation de l'icône
     },
     {
-      "src": "icon-512x512.png", // Chemin vers votre icône 512x512 px
+      "src": "icon-512.png", // Chemin vers votre icône 512x512 px
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
