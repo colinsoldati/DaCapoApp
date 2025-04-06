@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaCapo.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@latest/font/Lucide.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Define color variables for consistency */
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --subtle-border-color: #e5e5e5;
+            --secondary-text-color: #555555;
+            --accent-color: #000000;
+            --accent-text-color: #ffffff;
+            --delete-color: #cc0000;
+            --delete-hover-bg: #fce8e8;
+            --cancel-bg: #e5e5e5;
+            --cancel-text: #333333;
+            --cancel-hover-bg: #d4d4d4;
+        }
+
+        html, body {
+            height: 100%; /* Ensure body takes full height */
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color); /* App background directly on body */
+            color: var(--text-color);
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Stack elements vertically */
+            min-height: 100vh; /* Ensure it takes at least full viewport height */
+        }
+
+        /* Main application container */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* Allow container to grow and fill space */
+            max-width: 600px; /* Max width for larger screens, centered */
+            width: 100%; /* Full width on smaller screens */
+            margin: 0 auto; /* Center the container */
+            position: relative; /* For positioning FAB */
+            overflow: hidden; /* Prevent potential overflow issues */
+        }
+
+        .app-header {
+            background-color: var(--background-color);
+            padding: 20px 20px 15px 20px; /* Adjusted padding */
+            text-align: center;
+            border-bottom: 1px solid var(--subtle-border-color);
+            position: sticky; /* Keep header sticky */
+            top: 0;
+            z-index: 10; /* Ensure header is above content */
+        }
+        .app-title {
+            font-size: 1.5rem; /* 24px */
+            font-weight: 700;
+        }
+
+        /* Content area that scrolls */
+        .app-content-area {
+            flex-grow: 1; /* Takes up available space */
+            overflow-y: auto; /* Allows scrolling within content */
+            padding: 20px; /* Padding around content */
+            padding-bottom: 90px; /* Space for bottom nav + FAB */
+        }
+        .app-view {
+            display: none; /* Hide views by default */
+        }
+        .app-view.active {
+            display: block; /* Show active view */
+        }
+
+        /* Journal Entry Styles */
+        .entry {
+            border: 1px solid var(--subtle-border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: var(--background-color);
+            cursor: pointer;
+            position: relative;
+        }
+        .entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .entry-date { font-weight: 600; font-size: 0.9rem; }
+        .entry-duration { font-size: 0.8rem; color: var(--secondary-text-color); }
+        .entry-piece { font-weight: 500; margin-bottom: 5px; font-size: 1rem; }
+        .entry-notes { font-size: 0.9rem; color: #333333; white-space: pre-wrap; }
+        .entry-content { padding-right: 35px; } /* Space for delete button */
+
+
+        /* Repertoire Item Styles */
+         .repertoire-item {
+            border: 1px solid var(--subtle-border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: var(--background-color);
+            cursor: pointer;
+            position: relative;
+         }
+         .repertoire-item-title { font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; }
+         .repertoire-item-composer { font-weight: 400; font-size: 0.9rem; color: var(--secondary-text-color); margin-bottom: 8px; }
+         .repertoire-item-genre { font-size: 0.8rem; color: var(--text-color); background-color: #f0f0f0; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+         .repertoire-item-content { padding-right: 35px; } /* Space for delete button */
+
+         /* Shared Delete Button Style */
+         .delete-button {
+            position: absolute;
+            top: 50%; /* Center vertically */
+            right: 10px;
+            transform: translateY(-50%); /* Adjust vertical centering */
+            background: none;
+            border: none;
+            color: var(--delete-color);
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            z-index: 2;
+         }
+         .delete-button:hover { background-color: var(--delete-hover-bg); }
+         .delete-button i { font-size: 16px; }
+
+
+        /* Add Button (Floating Action Button) */
+        .fab {
+            position: fixed; /* Fixed relative to viewport */
+            bottom: 85px; /* Above bottom nav */
+            /* Position relative to the app container's potential max-width */
+            right: calc(50% - 300px + 56px - 20px); /* Adjust right position based on max-width */
+            margin-right: 20px; /* Margin from edge on smaller screens */
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+            z-index: 50;
+        }
+         /* Adjust FAB position for smaller screens */
+         @media (max-width: 640px) { /* Tailwind's sm breakpoint approx */
+            .fab {
+                right: 20px; /* Simple positioning from right edge */
+                margin-right: 0;
+            }
+         }
+        .fab:hover { background-color: #333333; transform: scale(1.05); }
+        .fab i { font-size: 24px; }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed; /* Fixed at the bottom of the viewport */
+            bottom: 0;
+            left: 0; /* Align to left edge */
+            right: 0; /* Align to right edge */
+            max-width: 600px; /* Match app container max-width */
+            margin: 0 auto; /* Center the nav */
+            height: 70px;
+            background-color: var(--accent-color);
+            color: var(--accent-text-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #333;
+            z-index: 50; /* Ensure it's above content */
+            box-sizing: border-box;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; cursor: pointer; flex: 1;
+            padding: 10px 0; /* Increased padding for easier touch */
+            opacity: 0.7; transition: opacity 0.2s ease;
+        }
+        .nav-item.active { opacity: 1; }
+        .nav-item i { font-size: 22px; margin-bottom: 2px; }
+        .nav-item span { font-size: 0.7rem; }
+
+        /* Modal Styles (Shared) */
+        .modal {
+            display: none; position: fixed; z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-content {
+            background-color: var(--background-color);
+            margin: auto; padding: 30px; border-radius: 12px;
+            width: 100%; max-width: 400px; /* Slightly wider modal */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: var(--text-color);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 1.25rem; font-weight: 600; }
+        .close-button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--secondary-text-color); }
+        .modal-body label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.9rem; }
+        .modal-body input, .modal-body textarea, .modal-body select {
+            width: 100%; padding: 10px; margin-bottom: 15px;
+            border: 1px solid #cccccc; border-radius: 6px;
+            font-size: 1rem; box-sizing: border-box;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        .modal-body select {
+             appearance: none;
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+             background-repeat: no-repeat; background-position: right 10px center;
+             background-size: 1em; padding-right: 2.5em;
+        }
+        .modal-body textarea { min-height: 100px; resize: vertical; }
+        .modal-footer { margin-top: 10px; text-align: right; } /* Align buttons right */
+        .modal-footer button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500; display: inline-block; margin-left: 10px; }
+        .save-button { background-color: var(--accent-color); color: var(--accent-text-color); }
+        .save-button:hover { background-color: #333333; }
+        .cancel-button { background-color: var(--cancel-bg); color: var(--cancel-text); }
+        .cancel-button:hover { background-color: var(--cancel-hover-bg); }
+
+        /* Scrollbar styling (Optional but nice) */
+        .app-content-area::-webkit-scrollbar { width: 5px; }
+        .app-content-area::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .app-content-area::-webkit-scrollbar-thumb { background: #cccccc; border-radius: 10px; }
+        .app-content-area::-webkit-scrollbar-thumb:hover { background: #aaaaaa; }
+
+        /* Empty state */
+        .empty-state { text-align: center; margin-top: 50px; color: var(--secondary-text-color); padding: 20px; }
+        .empty-state i { font-size: 48px; margin-bottom: 15px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-title">DaCapo.</h1>
+        </header>
+
+        <main class="app-content-area">
+            <div id="journalView" class="app-view active">
+                <div id="journalEntries">
+                    </div>
+                 <div class="empty-state" id="journalEmptyState">
+                     <i class="lucide lucide-book-open-text"></i>
+                     <p>Aucune entrée de journal.</p>
+                     <p>Cliquez sur '+' pour ajouter.</p>
+                 </div>
+            </div>
+
+            <div id="repertoireView" class="app-view">
+                 <div id="repertoireList">
+                    </div>
+                 <div class="empty-state" id="repertoireEmptyState">
+                     <i class="lucide lucide-library-big"></i>
+                     <p>Aucune pièce dans le répertoire.</p>
+                     <p>Cliquez sur '+' pour ajouter.</p>
+                 </div>
+            </div>
+        </main>
+
+        <button class="fab" id="fab" aria-label="Ajouter une entrée de journal">
+            <i class="lucide lucide-plus"></i>
+        </button>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" data-view="journalView">
+                <i class="lucide lucide-notebook-tabs"></i>
+                <span>Journal</span>
+            </div>
+            <div class="nav-item" data-view="repertoireView">
+                <i class="lucide lucide-library-big"></i>
+                <span>Répertoire</span>
+            </div>
+        </nav>
+    </div> <div id="journalEntryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="journalModalTitle">Nouvelle Entrée</h2>
+                <button class="close-button" data-modal-id="journalEntryModal" aria-label="Fermer">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="journalEntryForm">
+                    <input type="hidden" id="journalEntryId">
+                    <div>
+                        <label for="entryDate">Date :</label>
+                        <input type="date" id="entryDate" name="entryDate" required>
+                    </div>
+                    <div>
+                        <label for="entryPieceSelect">Pièce travaillée :</label>
+                        <select id="entryPieceSelect" name="entryPieceSelect" required>
+                            <option value="" disabled selected>Sélectionner une pièce...</option>
+                            </select>
+                    </div>
+                    <div>
+                        <label for="entryDuration">Durée (minutes) :</label>
+                        <input type="number" id="entryDuration" name="entryDuration" placeholder="Ex: 60" min="1" required>
+                    </div>
+                    <div>
+                        <label for="entryNotes">Notes / Objectifs :</label>
+                        <textarea id="entryNotes" name="entryNotes" placeholder="Travail sur l'intonation..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                 <button type="button" class="cancel-button" data-modal-id="journalEntryModal">Annuler</button>
+                 <button type="button" class="save-button" id="saveJournalEntryBtn">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="repertoirePieceModal" class="modal">
+         <div class="modal-content">
+             <div class="modal-header">
+                 <h2 class="modal-title" id="repertoireModalTitle">Ajouter au Répertoire</h2>
+                 <button class="close-button" data-modal-id="repertoirePieceModal" aria-label="Fermer">&times;</button>
+             </div>
+             <div class="modal-body">
+                 <form id="repertoirePieceForm">
+                     <input type="hidden" id="repertoirePieceId">
+                     <div>
+                         <label for="pieceTitle">Titre :</label>
+                         <input type="text" id="pieceTitle" name="pieceTitle" placeholder="Ex: Sonate 'Pathétique'" required>
+                     </div>
+                     <div>
+                         <label for="pieceComposer">Compositeur :</label>
+                         <input type="text" id="pieceComposer" name="pieceComposer" placeholder="Ex: Ludwig van Beethoven" required>
+                     </div>
+                     <div>
+                         <label for="pieceGenre">Genre :</label>
+                         <select id="pieceGenre" name="pieceGenre" required>
+                             <option value="" disabled selected>Choisir un genre...</option>
+                             <option value="Sonate">Sonate</option>
+                             <option value="Concerto">Concerto</option>
+                             <option value="Étude/Caprice">Étude / Caprice</option>
+                             <option value="Technique">Technique</option>
+                             <option value="Pièce de caractère">Pièce de caractère</option>
+                             <option value="Musique de chambre">Musique de chambre</option>
+                             <option value="Orchestre">Orchestre</option>
+                             <option value="Autre">Autre</option>
+                         </select>
+                     </div>
+                 </form>
+             </div>
+             <div class="modal-footer">
+                  <button type="button" class="cancel-button" data-modal-id="repertoirePieceModal">Annuler</button>
+                  <button type="button" class="save-button" id="saveRepertoirePieceBtn">Enregistrer</button>
+             </div>
+         </div>
+     </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const journalView = document.getElementById('journalView');
+        const repertoireView = document.getElementById('repertoireView');
+        const journalEntriesContainer = document.getElementById('journalEntries');
+        const repertoireListContainer = document.getElementById('repertoireList');
+        const fab = document.getElementById('fab');
+        const bottomNavItems = document.querySelectorAll('.nav-item');
+        const journalEmptyState = document.getElementById('journalEmptyState');
+        const repertoireEmptyState = document.getElementById('repertoireEmptyState');
+
+        // Journal Modal Elements
+        const journalEntryModal = document.getElementById('journalEntryModal');
+        const journalEntryForm = document.getElementById('journalEntryForm');
+        const saveJournalEntryBtn = document.getElementById('saveJournalEntryBtn');
+        const journalModalTitle = document.getElementById('journalModalTitle');
+        const journalEntryIdInput = document.getElementById('journalEntryId');
+        const entryDateInput = document.getElementById('entryDate');
+        const entryPieceSelect = document.getElementById('entryPieceSelect');
+        const entryDurationInput = document.getElementById('entryDuration');
+        const entryNotesInput = document.getElementById('entryNotes');
+
+        // Repertoire Modal Elements
+        const repertoirePieceModal = document.getElementById('repertoirePieceModal');
+        const repertoirePieceForm = document.getElementById('repertoirePieceForm');
+        const saveRepertoirePieceBtn = document.getElementById('saveRepertoirePieceBtn');
+        const repertoireModalTitle = document.getElementById('repertoireModalTitle');
+        const repertoirePieceIdInput = document.getElementById('repertoirePieceId');
+        const pieceTitleInput = document.getElementById('pieceTitle');
+        const pieceComposerInput = document.getElementById('pieceComposer');
+        const pieceGenreInput = document.getElementById('pieceGenre');
+
+        // Close & Cancel Buttons (Shared Logic)
+        const closeButtons = document.querySelectorAll('.close-button');
+        const cancelButtons = document.querySelectorAll('.cancel-button');
+
+        let currentView = 'journalView'; // Track the active view
+
+        // --- Data Management ---
+        const StorageKeys = {
+            JOURNAL: 'dacapoEntries',
+            REPERTOIRE: 'dacapoRepertoire'
+        };
+
+        // Function to get data from localStorage
+        function getData(key) {
+            const data = localStorage.getItem(key);
+            try {
+                // Attempt to parse JSON, return empty array on failure or if null
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error(`Error parsing localStorage key "${key}":`, e);
+                return []; // Return empty array on parsing error
+            }
+        }
+
+        // Function to save data to localStorage
+        function saveData(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error(`Error saving to localStorage key "${key}":`, e);
+                // Handle potential storage errors (e.g., quota exceeded)
+                alert("Erreur lors de la sauvegarde des données. Le stockage local est peut-être plein.");
+            }
+        }
+
+        // --- Utility ---
+        // Function to escape HTML special characters to prevent XSS
+        function escapeHTML(str) {
+          if (typeof str !== 'string') {
+              str = String(str); // Convert non-strings to strings
+          }
+          return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+
+        // --- View Switching ---
+        // Function to switch between Journal and Repertoire views
+        function switchView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.app-view').forEach(view => view.classList.remove('active'));
+            // Show the selected view
+            const activeView = document.getElementById(viewId);
+            if(activeView) {
+                activeView.classList.add('active');
+            }
+
+            // Update active state in bottom navigation
+            bottomNavItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.view === viewId);
+            });
+            currentView = viewId;
+            // Update FAB aria-label for accessibility
+            fab.setAttribute('aria-label', currentView === 'journalView' ? 'Ajouter une entrée de journal' : 'Ajouter une pièce au répertoire');
+        }
+
+        // --- Populate Repertoire Dropdown in Journal Modal ---
+        // Fills the 'Piece Practiced' dropdown with items from the repertoire
+        function populateRepertoireDropdown(selectedPieceTitle = null) {
+            const pieces = getData(StorageKeys.REPERTOIRE);
+            entryPieceSelect.innerHTML = ''; // Clear existing options
+
+            // Add default disabled option
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "Sélectionner une pièce...";
+            defaultOption.disabled = true;
+            defaultOption.selected = true; // Make it selected by default
+            entryPieceSelect.appendChild(defaultOption);
+
+            // Add repertoire pieces as options
+            pieces.forEach(piece => {
+                const option = document.createElement('option');
+                option.value = piece.title; // Use title as the value
+                option.textContent = `${piece.title} (${piece.composer})`; // Show title and composer
+                entryPieceSelect.appendChild(option);
+            });
+
+            // If editing, try to pre-select the piece
+             if (selectedPieceTitle) {
+                 const foundOption = Array.from(entryPieceSelect.options).find(opt => opt.value === selectedPieceTitle);
+                 if (foundOption) {
+                     foundOption.selected = true;
+                 } else {
+                     // If the previously selected piece is no longer in the repertoire,
+                     // add it as a disabled option for context, but keep default selected
+                     const missingOption = document.createElement('option');
+                     missingOption.value = selectedPieceTitle;
+                     missingOption.textContent = `${selectedPieceTitle} (supprimé du répertoire)`;
+                     missingOption.disabled = true;
+                     entryPieceSelect.appendChild(missingOption);
+                     entryPieceSelect.value = ""; // Keep default selected
+                 }
+             } else {
+                  entryPieceSelect.value = ""; // Ensure default is selected for new entries
+             }
+        }
+
+
+        // --- Modal Handling ---
+        // Function to open a specified modal, optionally pre-filling data
+        function openModal(modalId, data = null) {
+            const modal = document.getElementById(modalId);
+            if (!modal) {
+                console.error(`Modal with ID "${modalId}" not found.`);
+                return;
+            }
+
+            if (modalId === 'journalEntryModal') {
+                journalEntryForm.reset(); // Reset form fields
+                populateRepertoireDropdown(data ? data.piece : null); // Populate dropdown
+
+                if (data) { // Editing existing Journal Entry
+                    journalModalTitle.textContent = 'Modifier l\'Entrée';
+                    journalEntryIdInput.value = data.id;
+                    entryDateInput.value = data.date;
+                    // Dropdown selection is handled by populateRepertoireDropdown
+                    entryDurationInput.value = data.duration;
+                    entryNotesInput.value = data.notes;
+                } else { // New Journal Entry
+                    journalModalTitle.textContent = 'Nouvelle Entrée';
+                    journalEntryIdInput.value = ''; // Ensure ID is clear for new entry
+                    entryDateInput.valueAsDate = new Date(); // Default date to today
+                }
+            } else if (modalId === 'repertoirePieceModal') {
+                 repertoirePieceForm.reset(); // Reset form fields
+                 if (data) { // Editing existing Repertoire Piece
+                    repertoireModalTitle.textContent = 'Modifier la Pièce';
+                    repertoirePieceIdInput.value = data.id;
+                    pieceTitleInput.value = data.title;
+                    pieceComposerInput.value = data.composer;
+                    pieceGenreInput.value = data.genre;
+                 } else { // New Repertoire Piece
+                     repertoireModalTitle.textContent = 'Ajouter au Répertoire';
+                     repertoirePieceIdInput.value = ''; // Ensure ID is clear
+                     pieceGenreInput.value = ""; // Reset genre dropdown
+                 }
+            }
+
+            modal.style.display = 'flex'; // Show the modal
+        }
+
+        // Function to close a specified modal
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none'; // Hide the modal
+            }
+        }
+
+        // --- Journal Rendering & Logic ---
+        // Function to render all journal entries in the UI
+        function renderJournalEntries() {
+            const entries = getData(StorageKeys.JOURNAL);
+            // Sort entries by date, newest first
+            entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            journalEntriesContainer.innerHTML = ''; // Clear existing entries
+
+            // Show empty state message if no entries exist
+            if (entries.length === 0) {
+                journalEmptyState.style.display = 'block';
+            } else {
+                journalEmptyState.style.display = 'none';
+                // Create and append HTML for each entry
+                entries.forEach(entry => {
+                    const entryElement = document.createElement('div');
+                    entryElement.classList.add('entry');
+                    entryElement.dataset.id = entry.id; // Store ID for reference
+
+                    // Format date nicely (e.g., "6 avril 2025")
+                    const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+                    const entryDate = entry.date ? new Date(entry.date + 'T00:00:00') : null; // Handle potential invalid date, add time to avoid TZ issues
+                    const formattedDate = entryDate ? entryDate.toLocaleDateString('fr-FR', dateOptions) : 'Date invalide';
+
+                    // Use textContent for security unless HTML is intended
+                    entryElement.innerHTML = `
+                        <button class="delete-button journal-delete-btn" data-id="${entry.id}" aria-label="Supprimer l'entrée">
+                            <i class="lucide lucide-trash-2"></i>
+                        </button>
+                        <div class="entry-content"> <div class="entry-header">
+                                <span class="entry-date">${formattedDate}</span>
+                                <span class="entry-duration">${escapeHTML(entry.duration)} min</span>
+                            </div>
+                            <p class="entry-piece">${escapeHTML(entry.piece)}</p>
+                            <p class="entry-notes">${escapeHTML(entry.notes)}</p>
+                        </div>
+                    `;
+                    // Add event listener to the content area for editing (ignores delete button)
+                    entryElement.querySelector('.entry-content').addEventListener('click', () => {
+                        openModal('journalEntryModal', entry);
+                    });
+                    journalEntriesContainer.appendChild(entryElement);
+                });
+            }
+        }
+
+        // Function to save a new or updated journal entry
+        function saveJournalEntry() {
+            // Use HTML5 form validation
+            if (!journalEntryForm.checkValidity()) {
+                journalEntryForm.reportValidity(); // Show browser validation messages
+                return;
+            }
+
+            const entries = getData(StorageKeys.JOURNAL);
+            // Create entry data object from form values
+            const entryData = {
+                id: journalEntryIdInput.value || Date.now().toString(), // Generate ID if new
+                date: entryDateInput.value,
+                piece: entryPieceSelect.value, // Get value from select dropdown
+                duration: parseInt(entryDurationInput.value, 10),
+                notes: entryNotesInput.value.trim()
+            };
+
+            // Simple validation: Ensure a piece was selected
+             if (!entryData.piece) {
+                 alert("Veuillez sélectionner une pièce dans la liste.");
+                 entryPieceSelect.focus();
+                 return;
+             }
+
+            // Find if entry already exists (for editing)
+            const existingIndex = entries.findIndex(e => e.id === entryData.id);
+            if (existingIndex > -1) {
+                entries[existingIndex] = entryData; // Update existing entry
+            } else {
+                entries.push(entryData); // Add as new entry
+            }
+
+            saveData(StorageKeys.JOURNAL, entries); // Save updated array to localStorage
+            renderJournalEntries(); // Refresh the displayed list
+            closeModal('journalEntryModal'); // Close the modal
+        }
+
+        // Function to delete a journal entry by ID
+        function deleteJournalEntry(id) {
+            let entries = getData(StorageKeys.JOURNAL);
+            // Filter out the entry with the matching ID
+            entries = entries.filter(entry => entry.id !== id);
+            saveData(StorageKeys.JOURNAL, entries); // Save the filtered array
+            renderJournalEntries(); // Refresh the list
+        }
+
+        // --- Repertoire Rendering & Logic ---
+        // Function to render all repertoire pieces in the UI
+        function renderRepertoireList() {
+            const pieces = getData(StorageKeys.REPERTOIRE);
+            // Sort pieces alphabetically by title
+            pieces.sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' }));
+
+            repertoireListContainer.innerHTML = ''; // Clear existing list
+
+            // Show empty state message if no pieces exist
+            if (pieces.length === 0) {
+                repertoireEmptyState.style.display = 'block';
+            } else {
+                repertoireEmptyState.style.display = 'none';
+                // Create and append HTML for each piece
+                pieces.forEach(piece => {
+                    const pieceElement = document.createElement('div');
+                    pieceElement.classList.add('repertoire-item');
+                    pieceElement.dataset.id = piece.id; // Store ID for reference
+
+                    pieceElement.innerHTML = `
+                         <button class="delete-button repertoire-delete-btn" data-id="${piece.id}" aria-label="Supprimer la pièce">
+                             <i class="lucide lucide-trash-2"></i>
+                        </button>
+                        <div class="repertoire-item-content"> <p class="repertoire-item-title">${escapeHTML(piece.title)}</p>
+                            <p class="repertoire-item-composer">${escapeHTML(piece.composer)}</p>
+                            <span class="repertoire-item-genre">${escapeHTML(piece.genre)}</span>
+                        </div>
+                    `;
+                     // Add event listener to the content area for editing
+                    pieceElement.querySelector('.repertoire-item-content').addEventListener('click', () => {
+                        openModal('repertoirePieceModal', piece);
+                    });
+                    repertoireListContainer.appendChild(pieceElement);
+                });
+            }
+        }
+
+        // Function to save a new or updated repertoire piece
+         function saveRepertoirePiece() {
+             // Use HTML5 form validation
+             if (!repertoirePieceForm.checkValidity()) {
+                 repertoirePieceForm.reportValidity();
+                 return;
+             }
+
+             const pieces = getData(StorageKeys.REPERTOIRE);
+             // Create piece data object from form values
+             const pieceData = {
+                 id: repertoirePieceIdInput.value || Date.now().toString(), // Generate ID if new
+                 title: pieceTitleInput.value.trim(),
+                 composer: pieceComposerInput.value.trim(),
+                 genre: pieceGenreInput.value
+             };
+
+              // Basic validation: Ensure title and composer are not empty
+              if (!pieceData.title || !pieceData.composer) {
+                  // This should be caught by 'required' attribute, but double-check
+                  alert("Le titre et le compositeur sont requis.");
+                  return;
+              }
+
+             // Find if piece already exists (for editing)
+             const existingIndex = pieces.findIndex(p => p.id === pieceData.id);
+             if (existingIndex > -1) {
+                 // If editing, check if the new title/composer combination creates a duplicate (excluding the item being edited)
+                 if (pieces.some(p => p.id !== pieceData.id && p.title.toLowerCase() === pieceData.title.toLowerCase() && p.composer.toLowerCase() === pieceData.composer.toLowerCase())) {
+                     alert("Une autre pièce avec le même titre et compositeur existe déjà.");
+                     return;
+                 }
+                 pieces[existingIndex] = pieceData; // Update existing piece
+             } else {
+                 // If adding new, check for duplicates
+                 if (pieces.some(p => p.title.toLowerCase() === pieceData.title.toLowerCase() && p.composer.toLowerCase() === pieceData.composer.toLowerCase())) {
+                     alert("Cette pièce existe déjà dans le répertoire.");
+                     return;
+                 }
+                 pieces.push(pieceData); // Add as new piece
+             }
+
+             saveData(StorageKeys.REPERTOIRE, pieces); // Save updated array
+             renderRepertoireList(); // Refresh the displayed list
+             closeModal('repertoirePieceModal'); // Close the modal
+         }
+
+         // Function to delete a repertoire piece by ID
+         function deleteRepertoirePiece(id) {
+             let pieces = getData(StorageKeys.REPERTOIRE);
+             // Filter out the piece with the matching ID
+             pieces = pieces.filter(piece => piece.id !== id);
+             saveData(StorageKeys.REPERTOIRE, pieces); // Save the filtered array
+             renderRepertoireList(); // Refresh the list
+             // Note: Associated journal entries are NOT deleted or modified.
+         }
+
+
+        // --- Event Listeners ---
+
+        // Setup Bottom Navigation Clicks
+        bottomNavItems.forEach(item => {
+            item.addEventListener('click', () => {
+                switchView(item.dataset.view); // Switch view based on data attribute
+            });
+        });
+
+        // Setup Floating Action Button Click (contextual add)
+        fab.addEventListener('click', () => {
+            if (currentView === 'journalView') {
+                openModal('journalEntryModal'); // Open journal modal
+            } else if (currentView === 'repertoireView') {
+                openModal('repertoirePieceModal'); // Open repertoire modal
+            }
+        });
+
+        // Setup Modal Close Buttons
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => closeModal(btn.dataset.modalId));
+        });
+
+        // Setup Modal Cancel Buttons
+        cancelButtons.forEach(btn => {
+             btn.addEventListener('click', () => closeModal(btn.dataset.modalId));
+        });
+
+        // Setup Modal Save Buttons
+        saveJournalEntryBtn.addEventListener('click', saveJournalEntry);
+        saveRepertoirePieceBtn.addEventListener('click', saveRepertoirePiece);
+
+        // Event Delegation for Delete Buttons in Journal View
+        journalEntriesContainer.addEventListener('click', (event) => {
+            const deleteBtn = event.target.closest('.journal-delete-btn'); // Find closest delete button
+            if (deleteBtn) {
+                const entryId = deleteBtn.dataset.id;
+                // Confirmation dialog before deleting
+                if (confirm('Êtes-vous sûr de vouloir supprimer cette entrée de journal ?')) {
+                    deleteJournalEntry(entryId);
+                }
+            }
+        });
+
+        // Event Delegation for Delete Buttons in Repertoire View
+        repertoireListContainer.addEventListener('click', (event) => {
+             const deleteBtn = event.target.closest('.repertoire-delete-btn'); // Find closest delete button
+             if (deleteBtn) {
+                 const pieceId = deleteBtn.dataset.id;
+                 // Confirmation dialog before deleting
+                 if (confirm('Êtes-vous sûr de vouloir supprimer cette pièce du répertoire ?\n(Les entrées de journal associées ne seront pas supprimées)')) {
+                     deleteRepertoirePiece(pieceId);
+                 }
+             }
+         });
+
+
+        // Close modal if clicking on the background overlay
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target.id);
+            }
+        });
+
+        // --- Initial Load ---
+        // Setup the application when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            switchView(currentView); // Set the initial view (Journal)
+            renderJournalEntries();   // Render initial journal entries
+            renderRepertoireList(); // Render initial repertoire list
+        });
+
+    </script>
+</body>
+</html>
